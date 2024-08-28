@@ -1,0 +1,109 @@
+Untuk menjalankan perintah `ffmpeg` secara otomatis saat Odroid dinyalakan, Anda bisa membuat skrip startup dan menambahkannya ke proses boot. Berikut adalah langkah-langkah untuk melakukannya:
+
+### **1. Buat Skrip untuk Menjalankan `ffmpeg`**
+
+1. **Buat File Skrip**
+
+   - Buka terminal di Odroid.
+   - Buat file skrip di direktori `/usr/local/bin` atau lokasi lain yang sesuai:
+     ```sh
+     sudo nano /usr/local/bin/start-ffmpeg.sh
+     ```
+
+   - Tambahkan perintah `ffmpeg` ke dalam file skrip:
+     ```sh
+     #!/bin/bash
+     ffmpeg -f v4l2 -i /dev/video0 -r 5 -f mpegts udp://172.30.217.9:1234
+     ```
+
+   - Simpan dan keluar dari editor (tekan `Ctrl + X`, lalu `Y`, dan `Enter`).
+
+2. **Beri Izin Eksekusi pada Skrip**
+
+   - Ubah izin file skrip agar bisa dieksekusi:
+     ```sh
+     sudo chmod +x /usr/local/bin/start-ffmpeg.sh
+     ```
+
+### **2. Tambahkan Skrip ke Proses Boot**
+
+Ada beberapa cara untuk menambahkan skrip ke proses boot. Berikut dua metode umum:
+
+#### **Metode 1: Menggunakan `systemd`**
+
+1. **Buat File Unit Systemd**
+
+   - Buat file unit systemd di `/etc/systemd/system`:
+     ```sh
+     sudo nano /etc/systemd/system/start-ffmpeg.service
+     ```
+
+   - Tambahkan konfigurasi berikut ke dalam file:
+     ```ini
+     [Unit]
+     Description=Start FFmpeg Streaming
+     After=network.target
+
+     [Service]
+     ExecStart=/usr/local/bin/start-ffmpeg.sh
+     Restart=always
+     User=your_username  # Ganti dengan nama pengguna Anda jika diperlukan
+
+     [Install]
+     WantedBy=multi-user.target
+     ```
+
+   - Simpan dan keluar dari editor.
+
+2. **Aktifkan dan Jalankan Layanan**
+
+   - Reload systemd untuk membaca konfigurasi baru:
+     ```sh
+     sudo systemctl daemon-reload
+     ```
+
+   - Aktifkan layanan agar berjalan saat boot:
+     ```sh
+     sudo systemctl enable start-ffmpeg.service
+     ```
+
+   - (Opsional) Jalankan layanan segera tanpa reboot:
+     ```sh
+     sudo systemctl start start-ffmpeg.service
+     ```
+
+#### **Metode 2: Menggunakan `crontab`**
+
+1. **Edit Crontab**
+
+   - Edit crontab untuk pengguna root:
+     ```sh
+     sudo crontab -e
+     ```
+
+   - Tambahkan baris berikut di bagian akhir file:
+     ```sh
+     @reboot /usr/local/bin/start-ffmpeg.sh
+     ```
+
+   - Simpan dan keluar dari editor (tekan `Ctrl + X`, lalu `Y`, dan `Enter`).
+
+### **3. Verifikasi**
+
+1. **Reboot Odroid**
+
+   - Restart Odroid untuk memastikan skrip dijalankan saat boot:
+     ```sh
+     sudo reboot
+     ```
+
+2. **Periksa Status**
+
+   - Jika menggunakan `systemd`, periksa status layanan:
+     ```sh
+     sudo systemctl status start-ffmpeg.service
+     ```
+
+   - Jika menggunakan `crontab`, pastikan skrip dijalankan dengan memeriksa log atau output jaringan.
+
+Dengan mengikuti langkah-langkah ini, Anda dapat memastikan bahwa `ffmpeg` akan dijalankan secara otomatis setiap kali Odroid dinyalakan.
